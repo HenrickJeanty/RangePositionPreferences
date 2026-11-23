@@ -31,7 +31,7 @@ I measured it for every candlestick of 519 stocks: about 4.2 million daily, 875 
 
 ## Run it yourself
 
-Everything needed is in one folder, `RangePositionPreferences`. **The price data are not in it**: they come from `FinancialData`, whose terms apply, so I do not redistribute them. Instead the package builds the data from *your own* access to `FinancialData` and saves only ratios (no prices).
+Everything needed is in one folder, `RangePositionPreferences`, on GitHub: [https://github.com/HenrickJeanty/RangePositionPreferences](https://github.com/HenrickJeanty/RangePositionPreferences) (use *Code > Download ZIP*, or `git clone https://github.com/HenrickJeanty/RangePositionPreferences.git`). **The price data are not in it**: they come from `FinancialData`, whose terms apply, so I do not redistribute them. Instead the package builds the data from *your own* access to `FinancialData` and saves only ratios (no prices).
 
 * `Kernel/RangePositionPreferences.wl`: the code (four functions, each with a usage message).
 * `Notebooks/RangePositionPreferences.nb`: loads the code, builds the data and runs every analysis of this post, with every option spelled out so you can change it.
