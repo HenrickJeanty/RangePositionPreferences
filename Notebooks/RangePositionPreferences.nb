@@ -1,0 +1,795 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 15.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     36243,        786]
+NotebookOptionsPosition[     32419,        725]
+NotebookOutlinePosition[     32785,        741]
+CellTagsIndexPosition[     32742,        738]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell["\<\
+Are there preferred places for the Open and the Close in the range of a \
+candlestick?\
+\>", "Title",ExpressionUUID->"7a0b1926-0572-e04d-ae1d-ab250df881b4"],
+
+Cell["\<\
+A study of 519 stocks (daily, weekly and monthly candlesticks)\
+\>", "Subtitle",ExpressionUUID->"c4a562c0-b06e-f644-948d-38a8fd2c7581"],
+
+Cell["\<\
+For every candlestick, the position of its Open in its range is (Open - \
+Low)/(High - Low): 0 when the Open is at the Low, 1 when it is at the High. \
+The same for the Close. This notebook asks whether some positions are \
+preferred, using every single candlestick of 519 stocks (the constituents of \
+the S&P 500 in November 2026, listed in Tickers.txt). The price data are not \
+included in the package: section 2 builds them from your own access to \
+FinancialData and saves in the folder Data/ only the positions, the relative \
+ranges and the years (no prices). Keep the folders of the package together \
+(Kernel/, Data/, Notebooks/): the paths in the cells are relative to this \
+notebook.\
+\>", "Text",ExpressionUUID->"22abce61-de0d-d044-aef5-7bc741539c7f"],
+
+Cell["\<\
+Three things to know before reading the pictures. (1) The histogram of a \
+random walk is U-shaped, not flat, because the Low and the High are places \
+the price has been; so the reference in the pictures is a simulated random \
+walk (the orange line), not a flat line. (2) Before 2001 prices were quoted \
+in fractions, and a candlestick with a range of 2, 3 or 4 ticks can only have \
+positions 1/2, 1/3, 1/4, ...: that makes sharp spikes that are the price \
+grid, not a preference (section 5 shows them), so the analysis starts in 2001 \
+and, for daily candlesticks, keeps only those whose range is at least 3 % of \
+the price. (3) A position of exactly 0 or exactly 1 (the Open at the Low, the \
+Close at the High, ...) is a point mass and is reported on its own.\
+\>", "Text",ExpressionUUID->"023bb7b8-1d12-d54a-8349-a87cbad255d6"],
+
+Cell["\<\
+How to run: evaluate section 1, then section 2 once (it takes hours for all \
+the stocks; try 10 tickers first). Then sections 3 to 5 are independent of \
+each other, except that section 5 uses weeklyCollected from section 3. Every \
+call spells out all its options, with the values used for the results in the \
+post, so you can change them. The numbers in the post come from the 519 \
+tickers and the prices of November 2026; a build on another day, or with \
+fewer tickers, gives slightly different (and, with few tickers, noisier) \
+numbers. It is a description of where prices end up inside their range, not a \
+trading signal, and not investment advice.\
+\>", "Text",ExpressionUUID->"6784d42d-c85b-1c4d-9f9c-045bf40f0601"],
+
+Cell[CellGroupData[{
+
+Cell["1. Load the code", "Section",ExpressionUUID->"e0040458-14e4-0c44-8e85-6f5627feeacb"],
+
+Cell["\<\
+The file Kernel/RangePositionPreferences.wl defines buildRangePositionData \
+(makes the saved data from FinancialData), collectRangePositions (reads the \
+positions of the candlesticks), rangePositionPreferences (the histograms, the \
+random walk, the spikes) and showRangePositionPreferences (the pictures). \
+Each has a usage message: evaluate ?buildRangePositionData, \
+?collectRangePositions, ?rangePositionPreferences, \
+?showRangePositionPreferences. Its tests are in \
+Tests/RangePositionPreferences.wlt.\
+\>", "Text",ExpressionUUID->"932bf95a-e1c4-3c4b-b872-fd683d4f3f9d"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{"Load", " ", "the", " ", 
+     RowBox[{"code", ".", " ", "The"}], " ", "path", " ", "is", " ", 
+     "relative", " ", "to", " ", "this", " ", "notebook", " ", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"Notebooks", "/"}], " ", "->", " ", 
+       RowBox[{"Kernel", "/"}]}], ")"}]}], ",", " ", 
+    RowBox[{
+    "so", " ", "keep", " ", "the", " ", "folders", " ", "of", " ", "the", " ",
+      "package", " ", 
+     RowBox[{"together", ".", " ", "Nothing"}], " ", "else", " ", "is", " ", 
+     RowBox[{"needed", ":", " ", 
+      RowBox[{"no", " ", "price", " ", "data"}]}]}], ",", " ", 
+    RowBox[{"no", " ", 
+     RowBox[{"internet", "."}]}]}], " ", "*)"}], "\n", 
+  RowBox[{"Get", "[", "\n", "  ", 
+   RowBox[{"FileNameJoin", "[", "\n", "    ", 
+    RowBox[{"{", "\n", "      ", 
+     RowBox[{
+      RowBox[{"ParentDirectory", "[", 
+       RowBox[{"NotebookDirectory", "[", "]"}], "]"}], ",", "\n", 
+      "      ", "\"\<Kernel\>\"", ",", "\n", 
+      "      ", "\"\<RangePositionPreferences.wl\>\""}], "\n", "    ", "}"}], 
+    "\n", "  ", "]"}], "\n", "]"}]}]], "Input",ExpressionUUID->"6613545d-3332-\
+f746-ae49-36296b886e42"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["2. Build the data (once, needs FinancialData)", "Section",ExpressionUUID->"d7001f37-6e9b-564e-9514-9668db96c852"],
+
+Cell["\<\
+The first cell reads the list of tickers. The second one downloads the daily \
+prices of every ticker once, makes the daily, weekly and monthly candlesticks \
+and saves three files in Data/ (RangePositions_daily.wxf, \
+RangePositions_weekly.wxf, RangePositions_monthly.wxf). The files contain, \
+for every candlestick, the position of the Open, the position of the Close, \
+the relative range and the year, as integers in millionths: no prices. It \
+takes about 20 seconds for each ticker, so about 3 hours for the 519 tickers; \
+a progress bar is shown. The prices come from FinancialData, whose terms \
+apply: that is why the package does not include the data.\
+\>", "Text",ExpressionUUID->"7d509e02-851b-7843-9f1d-d8ebd6a45038"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{
+    "The", " ", "519", " ", "tickers", " ", "of", " ", "the", " ", "study", " ", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"the", " ", "constituents", " ", "of", " ", "the", " ", "S"}],
+         "&"}], "P", " ", "500", " ", "in", " ", "November", " ", "2026"}], 
+      ")"}]}], ",", " ", 
+    RowBox[{"one", " ", "per", " ", 
+     RowBox[{"line", ".", " ", "Replace"}], " ", "the", " ", "list", " ", 
+     "to", " ", "use", " ", "other", " ", 
+     RowBox[{"stocks", "."}]}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"tickers", " ", "=", " ", 
+     RowBox[{"Import", "[", "\n", "  ", 
+      RowBox[{
+       RowBox[{"FileNameJoin", "[", "\n", "    ", 
+        RowBox[{"{", "\n", "      ", 
+         RowBox[{
+          RowBox[{"ParentDirectory", "[", 
+           RowBox[{"NotebookDirectory", "[", "]"}], "]"}], ",", "\n", 
+          "      ", "\"\<Tickers.txt\>\""}], "\n", "    ", "}"}], "\n", "  ", 
+        "]"}], ",", "\n", "  ", "\"\<List\>\""}], "\n", "]"}]}], ";"}], "\n", 
+   
+   RowBox[{"Length", "[", "tickers", "]"}]}]}]], "Input",ExpressionUUID->\
+"fb974387-6f20-7242-9c8f-104ba17e28f9"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{"BUILD", " ", "THE", " ", 
+     RowBox[{"DATA", ".", " ", "Reads"}], " ", "the", " ", "daily", " ", 
+     "prices", " ", "of", " ", "the", " ", "tickers", " ", "with", " ", 
+     "FinancialData", " ", 
+     RowBox[{"(", 
+      RowBox[{
+      "an", " ", "internet", " ", "connection", " ", "and", " ", "a", " ", 
+       "Wolfram", " ", "licence", " ", "with", " ", "access", " ", "to", " ", 
+       "FinancialData", " ", "are", " ", "needed"}], ")"}]}], ",", " ", 
+    RowBox[{"makes", " ", "the", " ", "daily"}], ",", " ", 
+    RowBox[{
+    "weekly", " ", "and", " ", "monthly", " ", "candlesticks", " ", "of", " ",
+      "each", " ", "ticker"}], ",", " ", 
+    RowBox[{"and", " ", "saves", " ", "in", " ", 
+     RowBox[{"Data", "/", " ", "only"}], " ", "the", " ", "positions", " ", 
+     "of", " ", "the", " ", "Open", " ", "and", " ", "of", " ", "the", " ", 
+     "Close", " ", "in", " ", "the", " ", "range"}], ",", " ", 
+    RowBox[{
+    "the", " ", "relative", " ", "range", " ", "and", " ", "the", " ", "year",
+      " ", 
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{"no", " ", "prices"}], ")"}], ".", " ", "It"}], " ", "takes", " ",
+      "about", " ", "20", " ", "seconds", " ", "for", " ", "each", " ", 
+     RowBox[{"ticker", ":", " ", 
+      RowBox[{
+      "about", " ", "3", " ", "hours", " ", "for", " ", "the", " ", "519", " ",
+        "tickers"}]}]}], ",", " ", 
+    RowBox[{
+     RowBox[{"so", " ", "try", " ", "\"\<Tickers\>\""}], " ", "->", " ", 
+     RowBox[{
+      RowBox[{"Take", "[", 
+       RowBox[{"tickers", ",", " ", "10"}], "]"}], " ", "first", " ", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"about", " ", "4", " ", "minutes"}], ")"}], ".", " ", "A"}], " ",
+       "progress", " ", "bar", " ", "is", " ", 
+      RowBox[{"shown", ".", " ", "It"}], " ", "stops", " ", "if", " ", "a", " ",
+       "file", " ", "exists", " ", "already", " ", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"\"\<Overwrite\>\"", " ", "->", " ", "False"}], ")"}], 
+       "."}]}]}]}], " ", "*)"}], "\n", 
+  RowBox[{"buildSummary", " ", "=", " ", 
+   RowBox[{"buildRangePositionData", "[", "\n", "  ", 
+    RowBox[{
+     RowBox[{"FileNameJoin", "[", "\n", "    ", 
+      RowBox[{"{", "\n", "      ", 
+       RowBox[{
+        RowBox[{"ParentDirectory", "[", 
+         RowBox[{"NotebookDirectory", "[", "]"}], "]"}], ",", "\n", 
+        "      ", "\"\<Data\>\""}], "\n", "    ", "}"}], "\n", "  ", "]"}], ",",
+      "\n", "  ", 
+     RowBox[{"\"\<Tickers\>\"", " ", "->", " ", "tickers"}], ",", "\n", "  ", 
+     
+     RowBox[{"\"\<Periods\>\"", " ", "->", " ", 
+      RowBox[{"{", 
+       RowBox[{"\"\<daily\>\"", ",", " ", "\"\<weekly\>\"", ",", 
+        " ", "\"\<monthly\>\""}], "}"}]}], ",", "\n", "  ", 
+     RowBox[{"\"\<Retries\>\"", " ", "->", " ", "2"}], ",", "\n", "  ", 
+     RowBox[{"\"\<Overwrite\>\"", " ", "->", " ", "False"}]}], "\n", 
+    "]"}]}]}]], "Input",ExpressionUUID->"118770ef-1c21-fc49-a236-\
+71c9167a5234"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["3. Weekly candlesticks", "Section",ExpressionUUID->"c62498aa-7c16-a144-8717-07a2e5c8b7c4"],
+
+Cell["\<\
+About 875 000 weekly candlesticks, 604 729 of them from 2001 on (with the 519 \
+tickers of the study). Cells: read the saved data, make the histograms, draw \
+them, and show the summary and the spikes.\
+\>", "Text",ExpressionUUID->"6cc706e1-2317-c142-a784-8198d5895980"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{
+     RowBox[{
+      RowBox[{"WEEKLY", ".", " ", "Reads"}], " ", "the", " ", "positions", " ",
+       "of", " ", "the", " ", "weekly", " ", "candlesticks", " ", "from", " ", 
+      RowBox[{"Data", "/", " ", 
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{"made", " ", "in", " ", "section", " ", "2"}], ";", " ", 
+         RowBox[{"it", " ", "takes", " ", "a", " ", "few", " ", "seconds"}]}],
+         ")"}]}]}], ":", " ", 
+     RowBox[{"for", " ", "each", " ", "candlestick"}]}], ",", " ", 
+    RowBox[{
+    "the", " ", "position", " ", "of", " ", "the", " ", "Open", " ", "and", " ",
+      "of", " ", "the", " ", "Close", " ", "in", " ", "its", " ", "range"}], ",",
+     " ", 
+    RowBox[{"its", " ", "relative", " ", "range", " ", "and", " ", "its", " ", 
+     RowBox[{"year", "."}]}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{"weeklyCollected", " ", "=", " ", 
+    RowBox[{"collectRangePositions", "[", "\n", "  ", 
+     RowBox[{"\"\<weekly\>\"", ",", "\n", "  ", 
+      RowBox[{"\"\<Tickers\>\"", " ", "->", " ", "Automatic"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<Loader\>\"", " ", "->", " ", "Automatic"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<CacheFile\>\"", " ", "->", " ", 
+       RowBox[{"FileNameJoin", "[", "\n", "    ", 
+        RowBox[{"{", "\n", "      ", 
+         RowBox[{
+          RowBox[{"ParentDirectory", "[", 
+           RowBox[{"NotebookDirectory", "[", "]"}], "]"}], ",", "\n", 
+          "      ", "\"\<Data\>\"", ",", "\n", 
+          "      ", "\"\<RangePositions_weekly.wxf\>\""}], "\n", "    ", 
+         "}"}], "\n", "  ", "]"}]}]}], "\n", "]"}]}], ";"}]}]], "Input",Expres\
+sionUUID->"589a1138-ef87-774e-a714-b276883a7185"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{
+    "The", " ", "histograms", " ", "of", " ", "the", " ", "candlesticks", " ",
+      "from", " ", "2001", " ", "on", " ", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{
+       "before", " ", "2001", " ", "the", " ", "prices", " ", "were", " ", 
+        "in", " ", "fractions"}], ",", " ", 
+       RowBox[{"which", " ", "makes", " ", "spikes", " ", "at", " ", 
+        RowBox[{"1", "/", "2"}]}], ",", " ", 
+       RowBox[{"1", "/", "3"}], ",", " ", 
+       RowBox[{"1", "/", "4"}], ",", " ", "..."}], ")"}]}], ",", " ", 
+    RowBox[{"in", " ", "100", " ", "bins", " ", "of", " ", "1", " ", "%"}], ",",
+     " ", 
+    RowBox[{
+    "with", " ", "a", " ", "simulated", " ", "random", " ", "walk", " ", "as",
+      " ", "the", " ", "reference", " ", 
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{"a", " ", "random", " ", "walk", " ", "is", " ", "not", " ", 
+        RowBox[{"flat", ":", " ", 
+         RowBox[{
+          RowBox[{"it", " ", "is", " ", "U"}], "-", "shaped"}]}]}], ")"}], 
+      "."}]}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{"weeklyResult", " ", "=", " ", 
+    RowBox[{"rangePositionPreferences", "[", "\n", "  ", 
+     RowBox[{"weeklyCollected", ",", "\n", "  ", 
+      RowBox[{"\"\<Bins\>\"", " ", "->", " ", "100"}], ",", "\n", "  ", 
+      RowBox[{"\"\<FromYear\>\"", " ", "->", " ", "2001"}], ",", "\n", "  ", 
+      RowBox[{"\"\<ToYear\>\"", " ", "->", " ", "Automatic"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<MinRelativeRange\>\"", " ", "->", " ", "0"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<SpikeThreshold\>\"", " ", "->", " ", "5"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<Null\>\"", " ", "->", " ", "True"}], ",", "\n", "  ", 
+      RowBox[{"\"\<NullSteps\>\"", " ", "->", " ", "200"}], ",", "\n", "  ", 
+      RowBox[{"\"\<NullPaths\>\"", " ", "->", " ", "100000"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<NullDrift\>\"", " ", "->", " ", "0"}], ",", "\n", "  ", 
+      RowBox[{"\"\<Seed\>\"", " ", "->", " ", "1"}]}], "\n", "]"}]}], 
+   ";"}]}]], "Input",ExpressionUUID->"096fde04-972a-c141-a50d-09b91f5fad79"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"The", " ", 
+      RowBox[{"picture", ":", " ", "bars"}]}], " ", "=", " ", 
+     RowBox[{"the", " ", "real", " ", "density", " ", 
+      RowBox[{"(", 
+       RowBox[{"1", " ", "=", " ", 
+        RowBox[{
+        "what", " ", "a", " ", "flat", " ", "histogram", " ", "would", " ", 
+         "give"}]}], ")"}]}]}], ",", " ", 
+    RowBox[{
+     RowBox[{"orange", " ", "line"}], " ", "=", " ", 
+     RowBox[{"the", " ", "random", " ", "walk"}]}], ",", " ", 
+    RowBox[{
+     RowBox[{"red", " ", "=", " ", 
+      RowBox[{
+      "a", " ", "bin", " ", "that", " ", "stands", " ", "out", " ", "from", " ",
+        "its", " ", 
+       RowBox[{"neighbours", ".", " ", "The"}], " ", "two", " ", "end", " ", 
+       "bins", " ", "hold", " ", "the", " ", "candlesticks", " ", "whose", " ",
+        "Open", " ", 
+       RowBox[{"(", 
+        RowBox[{"or", " ", "Close"}], ")"}], " ", "is", " ", "exactly", " ", 
+       "at", " ", "the", " ", "Low", " ", 
+       RowBox[{"(", 
+        RowBox[{"or", " ", "High"}], ")"}]}]}], ";", " ", 
+     RowBox[{
+     "they", " ", "are", " ", "clipped", " ", "and", " ", "their", " ", 
+      "value", " ", "is", " ", "written", " ", "on", " ", 
+      RowBox[{"them", ".", " ", "Move"}], " ", "the", " ", "mouse", " ", 
+      "over", " ", "a", " ", 
+      RowBox[{"bin", ":", " ", 
+       RowBox[{"its", " ", "range"}]}]}]}], ",", " ", "density", ",", " ", 
+    "count", ",", " ", 
+    RowBox[{"the", " ", "random", " ", "walk", " ", "and"}], ",", " ", 
+    RowBox[{"for", " ", "the", " ", "end", " ", "bins"}], ",", " ", 
+    RowBox[{
+    "the", " ", "share", " ", "exactly", " ", "at", " ", "the", " ", "Low", " ",
+      "or", " ", "the", " ", "High", " ", "are", " ", 
+     RowBox[{"shown", "."}]}]}], " ", "*)"}], "\n", 
+  RowBox[{"showRangePositionPreferences", "[", "\n", "  ", 
+   RowBox[{"weeklyResult", ",", "\n", "  ", 
+    RowBox[{"\"\<Which\>\"", " ", "->", " ", "\"\<Both\>\""}], ",", "\n", 
+    "  ", 
+    RowBox[{"\"\<ImageSize\>\"", " ", "->", " ", "520"}], ",", "\n", "  ", 
+    RowBox[{"\"\<Theme\>\"", " ", "->", " ", "\"\<Light\>\""}], ",", "\n", 
+    "  ", 
+    RowBox[{"\"\<ShowNull\>\"", " ", "->", " ", "True"}], ",", "\n", "  ", 
+    RowBox[{"\"\<MarkSpikes\>\"", " ", "->", " ", "True"}], ",", "\n", "  ", 
+    RowBox[{"\"\<YMax\>\"", " ", "->", " ", "Automatic"}]}], "\n", 
+   "]"}]}]], "Input",ExpressionUUID->"175ad874-db73-0d4d-a50e-b59b924e4f58"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{"Mean", " ", "position"}], ",", " ", 
+    RowBox[{
+    "share", " ", "exactly", " ", "at", " ", "the", " ", "Low", " ", "and", " ",
+      "exactly", " ", "at", " ", "the", " ", "High"}], ",", " ", 
+    RowBox[{
+    "and", " ", "the", " ", "same", " ", "for", " ", "the", " ", "random", " ", 
+     RowBox[{"walk", ".", " ", "The"}], " ", "Open", " ", "is", " ", "at", " ",
+      "the", " ", "extreme", " ", "more", " ", "often", " ", "than", " ", 
+     "the", " ", 
+     RowBox[{"Close", "."}]}]}], " ", "*)"}], "\n", 
+  RowBox[{"weeklyResult", "[", "\"\<Summary\>\"", "]"}]}]], "Input",Expression\
+UUID->"5f01c20b-30b9-2e42-8c03-94215672248d"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{
+    "The", " ", "bins", " ", "that", " ", "stand", " ", "out", " ", "from", " ",
+      "their", " ", "neighbours", " ", "by", " ", "more", " ", "than", " ", 
+     "5", " ", "standard", " ", "deviations"}], ",", " ", 
+    RowBox[{
+    "with", " ", "the", " ", "simple", " ", "fraction", " ", "in", " ", "the",
+      " ", 
+     RowBox[{"bin", "."}]}]}], " ", "*)"}], "\n", 
+  RowBox[{"weeklyResult", "[", "\"\<Spikes\>\"", "]"}]}]], "Input",ExpressionU\
+UID->"0d5b55db-4067-f543-9bfd-a18d277bd045"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["4. Daily candlesticks", "Section",ExpressionUUID->"7e8710c9-8e96-5b44-a06c-81a7f149dd52"],
+
+Cell["\<\
+About 4.2 million daily candlesticks; the daily file is larger, so reading it \
+takes a little longer. With the 3 % minimum relative range, about 764 000 \
+candlesticks from 2001 on are used.\
+\>", "Text",ExpressionUUID->"bff44021-72a0-3e44-936a-4163d0a7d831"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{"DAILY", ".", " ", "About"}], " ", "4", " ", "million", " ", 
+    "candlesticks", " ", 
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"the", " ", "file", " ", "is", " ", "larger"}], ",", " ", 
+       RowBox[{
+       "so", " ", "this", " ", "takes", " ", "a", " ", "little", " ", 
+        "longer"}]}], ")"}], "."}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{"dailyCollected", " ", "=", " ", 
+    RowBox[{"collectRangePositions", "[", "\n", "  ", 
+     RowBox[{"\"\<daily\>\"", ",", "\n", "  ", 
+      RowBox[{"\"\<Tickers\>\"", " ", "->", " ", "Automatic"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<Loader\>\"", " ", "->", " ", "Automatic"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<CacheFile\>\"", " ", "->", " ", 
+       RowBox[{"FileNameJoin", "[", "\n", "    ", 
+        RowBox[{"{", "\n", "      ", 
+         RowBox[{
+          RowBox[{"ParentDirectory", "[", 
+           RowBox[{"NotebookDirectory", "[", "]"}], "]"}], ",", "\n", 
+          "      ", "\"\<Data\>\"", ",", "\n", 
+          "      ", "\"\<RangePositions_daily.wxf\>\""}], "\n", "    ", "}"}],
+         "\n", "  ", "]"}]}]}], "\n", "]"}]}], ";"}]}]], "Input",ExpressionUUI\
+D->"4b481847-8675-ac4f-ac06-ca75c9134b35"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{
+    "Daily", " ", "ranges", " ", "can", " ", "be", " ", "only", " ", "a", " ",
+      "few", " ", "cents", " ", "wide"}], ",", " ", 
+    RowBox[{
+    "which", " ", "also", " ", "puts", " ", "spikes", " ", "at", " ", 
+     RowBox[{"1", "/", "2"}]}], ",", " ", 
+    RowBox[{"1", "/", "3"}], ",", " ", 
+    RowBox[{
+     RowBox[{
+     "...", " ", "in", " ", "the", " ", "data", " ", "after", " ", "2001"}], ";",
+      " ", 
+     RowBox[{
+     "keeping", " ", "the", " ", "candlesticks", " ", "whose", " ", "range", " ",
+       "is", " ", "at", " ", "least", " ", "3", " ", "%", " ", "of", " ", 
+      "the", " ", "price", " ", 
+      RowBox[{"(", 
+       RowBox[{"about", " ", "760", " ", "000", " ", "of", " ", "them"}], 
+       ")"}], " ", "leaves", " ", "a", " ", "few"}]}], ",", " ", 
+    RowBox[{
+    "mostly", " ", "at", " ", "simple", " ", "fractions", " ", "such", " ", 
+     "as", " ", 
+     RowBox[{"1", "/", "2."}]}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{"dailyResult", " ", "=", " ", 
+    RowBox[{"rangePositionPreferences", "[", "\n", "  ", 
+     RowBox[{"dailyCollected", ",", "\n", "  ", 
+      RowBox[{"\"\<Bins\>\"", " ", "->", " ", "100"}], ",", "\n", "  ", 
+      RowBox[{"\"\<FromYear\>\"", " ", "->", " ", "2001"}], ",", "\n", "  ", 
+      RowBox[{"\"\<ToYear\>\"", " ", "->", " ", "Automatic"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<MinRelativeRange\>\"", " ", "->", " ", "0.03"}], ",", "\n",
+       "  ", 
+      RowBox[{"\"\<SpikeThreshold\>\"", " ", "->", " ", "5"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<Null\>\"", " ", "->", " ", "True"}], ",", "\n", "  ", 
+      RowBox[{"\"\<NullSteps\>\"", " ", "->", " ", "200"}], ",", "\n", "  ", 
+      RowBox[{"\"\<NullPaths\>\"", " ", "->", " ", "100000"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<NullDrift\>\"", " ", "->", " ", "0"}], ",", "\n", "  ", 
+      RowBox[{"\"\<Seed\>\"", " ", "->", " ", "1"}]}], "\n", "]"}]}], 
+   ";"}]}]], "Input",ExpressionUUID->"81bc225b-9680-7943-b059-384a9571417b"],
+
+Cell[BoxData[
+ RowBox[{"showRangePositionPreferences", "[", "\n", "  ", 
+  RowBox[{"dailyResult", ",", "\n", "  ", 
+   RowBox[{"\"\<Which\>\"", " ", "->", " ", "\"\<Both\>\""}], ",", "\n", "  ", 
+   RowBox[{"\"\<ImageSize\>\"", " ", "->", " ", "520"}], ",", "\n", "  ", 
+   RowBox[{"\"\<Theme\>\"", " ", "->", " ", "\"\<Light\>\""}], ",", "\n", 
+   "  ", 
+   RowBox[{"\"\<ShowNull\>\"", " ", "->", " ", "True"}], ",", "\n", "  ", 
+   RowBox[{"\"\<MarkSpikes\>\"", " ", "->", " ", "True"}], ",", "\n", "  ", 
+   RowBox[{"\"\<YMax\>\"", " ", "->", " ", "Automatic"}]}], "\n", 
+  "]"}]], "Input",ExpressionUUID->"8ef92e08-f6af-524b-b92b-45598ef9b86e"],
+
+Cell[BoxData[
+ RowBox[{"dailyResult", "[", "\"\<Summary\>\"", "]"}]], "Input",ExpressionUUID->"2eda0933-e6db-7543-a161-b805afa73afd"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["5. The price grid before 2001", "Section",ExpressionUUID->"0ead6822-c91f-194f-82fe-17d1c1bf79d5"],
+
+Cell["\<\
+The weekly candlesticks of 2000 and before: many bins stand out, at 1/4, 1/3, \
+1/2, 2/3, 3/4, ... These are the places a candlestick of only a few ticks can \
+have, not a preference of the market.\
+\>", "Text",ExpressionUUID->"1c21ad39-44d3-e443-b68d-4b2e39488b31"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"THE", " ", "PRICE", " ", 
+      RowBox[{"GRID", ".", " ", "The"}], " ", "weekly", " ", "candlesticks", " ",
+       "of", " ", "2000", " ", "and", " ", "before", " ", 
+      RowBox[{"(", 
+       RowBox[{"prices", " ", "in", " ", "fractions"}], ")"}]}], ":", " ", 
+     RowBox[{
+     "the", " ", "preferred", " ", "percentages", " ", "are", " ", 
+      "there"}]}], ",", " ", 
+    RowBox[{"as", " ", "many", " ", "spikes", " ", "at", " ", 
+     RowBox[{"1", "/", "4"}]}], ",", " ", 
+    RowBox[{"1", "/", "3"}], ",", " ", 
+    RowBox[{"1", "/", "2"}], ",", " ", 
+    RowBox[{"2", "/", "3"}], ",", " ", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"3", "/", "4"}], " ", "..."}], " ", "They", " ", "come", " ", 
+     "from", " ", "ranges", " ", "of", " ", "only", " ", "a", " ", "few", " ",
+      "ticks"}], ",", " ", 
+    RowBox[{"not", " ", "from", " ", "the", " ", 
+     RowBox[{"market", ".", " ", "Run"}], " ", "the", " ", "weekly", " ", 
+     "block", " ", "above", " ", "first", " ", 
+     RowBox[{
+      RowBox[{"(", "weeklyCollected", ")"}], "."}]}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{"weeklyOldResult", " ", "=", " ", 
+    RowBox[{"rangePositionPreferences", "[", "\n", "  ", 
+     RowBox[{"weeklyCollected", ",", "\n", "  ", 
+      RowBox[{"\"\<Bins\>\"", " ", "->", " ", "100"}], ",", "\n", "  ", 
+      RowBox[{"\"\<FromYear\>\"", " ", "->", " ", "1900"}], ",", "\n", "  ", 
+      RowBox[{"\"\<ToYear\>\"", " ", "->", " ", "2000"}], ",", "\n", "  ", 
+      RowBox[{"\"\<MinRelativeRange\>\"", " ", "->", " ", "0"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<SpikeThreshold\>\"", " ", "->", " ", "5"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<Null\>\"", " ", "->", " ", "False"}], ",", "\n", "  ", 
+      RowBox[{"\"\<NullSteps\>\"", " ", "->", " ", "200"}], ",", "\n", "  ", 
+      RowBox[{"\"\<NullPaths\>\"", " ", "->", " ", "100000"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<NullDrift\>\"", " ", "->", " ", "0"}], ",", "\n", "  ", 
+      RowBox[{"\"\<Seed\>\"", " ", "->", " ", "1"}]}], "\n", "]"}]}], 
+   ";"}]}]], "Input",ExpressionUUID->"47b0d88a-3d49-3043-9fdb-adfc1ebe23dc"],
+
+Cell[BoxData[
+ RowBox[{"showRangePositionPreferences", "[", "\n", "  ", 
+  RowBox[{"weeklyOldResult", ",", "\n", "  ", 
+   RowBox[{"\"\<Which\>\"", " ", "->", " ", "\"\<Both\>\""}], ",", "\n", "  ", 
+   RowBox[{"\"\<ImageSize\>\"", " ", "->", " ", "520"}], ",", "\n", "  ", 
+   RowBox[{"\"\<Theme\>\"", " ", "->", " ", "\"\<Light\>\""}], ",", "\n", 
+   "  ", 
+   RowBox[{"\"\<ShowNull\>\"", " ", "->", " ", "False"}], ",", "\n", "  ", 
+   RowBox[{"\"\<MarkSpikes\>\"", " ", "->", " ", "True"}], ",", "\n", "  ", 
+   RowBox[{"\"\<YMax\>\"", " ", "->", " ", "Automatic"}]}], "\n", 
+  "]"}]], "Input",ExpressionUUID->"1bcf560e-5eaa-4645-92bf-cdc6e3145cc3"],
+
+Cell[BoxData[
+ RowBox[{"weeklyOldResult", "[", "\"\<Spikes\>\"", "]"}]], "Input",ExpressionU\
+UID->"067b8534-f221-1748-a3ea-2391f9738fc6"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+6. Other tickers without the saved data (needs an internet connection)\
+\>", "Section",ExpressionUUID->"792906a7-1943-7247-b2af-8374b290c764"],
+
+Cell["\<\
+collectRangePositions can also read tickers directly, without saving \
+anything. With \"Loader\" -> Automatic and no local data layer it uses \
+FinancialData (daily prices, merged into weeks that start on Monday, into \
+months or into years), so it needs an internet connection and takes about 20 \
+seconds for each ticker (the first call is slower). You can also give your \
+own \"Loader\": a function of a ticker and a period (\"daily\", \"weekly\", \
+\"monthly\" or \"yearly\") that gives a list of associations with the keys \
+Date, Open, High, Low and Close; then \"Tickers\" is the list of names it \
+understands. A few tickers give a few thousand candlesticks, so the histogram \
+is far noisier than the one of 519 stocks: do not read spikes into it.\
+\>", "Text",ExpressionUUID->"c38767c9-389f-0041-acc4-6b91e5f9447f"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{"YOUR", " ", "OWN", " ", 
+     RowBox[{"TICKERS", ".", " ", "The"}], " ", "prices", " ", "come", " ", 
+     "from", " ", "FinancialData", " ", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"daily", " ", "prices"}], ",", " ", 
+       RowBox[{
+       "merged", " ", "into", " ", "weeks", " ", "that", " ", "start", " ", 
+        "on", " ", "Monday"}]}], ")"}]}], ",", " ", 
+    RowBox[{
+     RowBox[{
+     "so", " ", "this", " ", "needs", " ", "an", " ", "internet", " ", 
+      "connection", " ", "and", " ", "takes", " ", "about", " ", "20", " ", 
+      "seconds", " ", "for", " ", "each", " ", "ticker", " ", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"the", " ", "first", " ", "call", " ", "is", " ", 
+         RowBox[{"slower", ":", " ", 
+          RowBox[{
+          "FinancialData", " ", "prepares", " ", "its", " ", "indices"}]}]}], 
+        ")"}], ".", " ", "\"\<CacheFile\>\""}]}], " ", "->", " ", 
+     RowBox[{"None", ":", " ", 
+      RowBox[{"nothing", " ", "is", " ", 
+       RowBox[{"saved", ".", " ", "Replace"}], " ", "the", " ", "list", " ", 
+       "with", " ", "your", " ", 
+       RowBox[{"tickers", "."}]}]}]}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{"myCollected", " ", "=", " ", 
+    RowBox[{"collectRangePositions", "[", "\n", "  ", 
+     RowBox[{"\"\<weekly\>\"", ",", "\n", "  ", 
+      RowBox[{"\"\<Tickers\>\"", " ", "->", " ", 
+       RowBox[{"{", 
+        RowBox[{"\"\<AAPL\>\"", ",", " ", "\"\<MSFT\>\"", ",", 
+         " ", "\"\<XOM\>\"", ",", " ", "\"\<PEP\>\"", ",", " ", "\"\<PCG\>\"",
+          ",", " ", "\"\<KO\>\"", ",", " ", "\"\<JNJ\>\"", ",", 
+         " ", "\"\<IBM\>\""}], "}"}]}], ",", "\n", "  ", 
+      RowBox[{"\"\<Loader\>\"", " ", "->", " ", "Automatic"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<CacheFile\>\"", " ", "->", " ", "None"}]}], "\n", "]"}]}], 
+   ";"}]}]], "Input",ExpressionUUID->"edbdd9c9-20c0-d64b-931a-33d7d8931c7d"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{
+    "The", " ", "candlesticks", " ", "that", " ", "were", " ", "read"}], ",", 
+    " ", "kept", ",", " ", 
+    RowBox[{
+     RowBox[{"left", " ", "out", " ", "because", " ", "High"}], " ", "=", " ",
+      "Low"}], ",", " ", 
+    RowBox[{
+    "and", " ", "left", " ", "out", " ", "because", " ", "the", " ", "Open", " ",
+      "or", " ", "the", " ", "Close", " ", "is", " ", "outside", " ", "the", " ",
+      "range", " ", "or", " ", "a", " ", "price", " ", "is", " ", 
+     "missing"}]}], " ", "*)"}], "\n", 
+  RowBox[{"myCollected", "[", "\"\<TickerSummary\>\"", "]"}]}]], "Input",Expre\
+ssionUUID->"0385c291-a92a-fc4d-b92f-3a8f56296c32"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{"The", " ", "same", " ", 
+     RowBox[{"analysis", ".", " ", "A"}], " ", "few", " ", "tickers", " ", 
+     "give", " ", "a", " ", "few", " ", "thousand", " ", "candlesticks"}], ",",
+     " ", 
+    RowBox[{
+    "so", " ", "the", " ", "histogram", " ", "is", " ", "much", " ", 
+     "noisier", " ", "than", " ", "the", " ", "one", " ", "of", " ", "519", " ", 
+     RowBox[{"tickers", ":", " ", 
+      RowBox[{
+      "use", " ", "20", " ", "bins", " ", "and", " ", "expect", " ", "no", " ",
+        "spikes", " ", "to", " ", "be", " ", 
+       RowBox[{"reliable", "."}]}]}]}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{"myResult", " ", "=", " ", 
+    RowBox[{"rangePositionPreferences", "[", "\n", "  ", 
+     RowBox[{"myCollected", ",", "\n", "  ", 
+      RowBox[{"\"\<Bins\>\"", " ", "->", " ", "20"}], ",", "\n", "  ", 
+      RowBox[{"\"\<FromYear\>\"", " ", "->", " ", "2001"}], ",", "\n", "  ", 
+      RowBox[{"\"\<ToYear\>\"", " ", "->", " ", "Automatic"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<MinRelativeRange\>\"", " ", "->", " ", "0"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<SpikeThreshold\>\"", " ", "->", " ", "5"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<Null\>\"", " ", "->", " ", "True"}], ",", "\n", "  ", 
+      RowBox[{"\"\<NullSteps\>\"", " ", "->", " ", "200"}], ",", "\n", "  ", 
+      RowBox[{"\"\<NullPaths\>\"", " ", "->", " ", "100000"}], ",", "\n", 
+      "  ", 
+      RowBox[{"\"\<NullDrift\>\"", " ", "->", " ", "0"}], ",", "\n", "  ", 
+      RowBox[{"\"\<Seed\>\"", " ", "->", " ", "1"}]}], "\n", "]"}]}], 
+   ";"}]}]], "Input",ExpressionUUID->"4473b10c-f3e4-8244-8540-d238821c7679"],
+
+Cell[BoxData[
+ RowBox[{"showRangePositionPreferences", "[", "\n", "  ", 
+  RowBox[{"myResult", ",", "\n", "  ", 
+   RowBox[{"\"\<Which\>\"", " ", "->", " ", "\"\<Both\>\""}], ",", "\n", "  ", 
+   RowBox[{"\"\<ImageSize\>\"", " ", "->", " ", "520"}], ",", "\n", "  ", 
+   RowBox[{"\"\<Theme\>\"", " ", "->", " ", "\"\<Light\>\""}], ",", "\n", 
+   "  ", 
+   RowBox[{"\"\<ShowNull\>\"", " ", "->", " ", "True"}], ",", "\n", "  ", 
+   RowBox[{"\"\<MarkSpikes\>\"", " ", "->", " ", "True"}], ",", "\n", "  ", 
+   RowBox[{"\"\<YMax\>\"", " ", "->", " ", "Automatic"}]}], "\n", 
+  "]"}]], "Input",ExpressionUUID->"bad8baf4-33f1-114f-8925-38656b4e7fdd"]
+}, Open  ]]
+},
+WindowSize->{900, 800},
+Magnification->1.1,
+FrontEndVersion->"15.0 for Microsoft Windows (64-bit) (July 2, 2026)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"f2507cb8-4a84-a549-a543-948ac9391eb6"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[554, 20, 169, 3, 77, "Title",ExpressionUUID->"7a0b1926-0572-e04d-ae1d-ab250df881b4"],
+Cell[723, 25, 147, 2, 77, "Subtitle",ExpressionUUID->"c4a562c0-b06e-f644-948d-38a8fd2c7581"],
+Cell[871, 29, 786, 11, 77, "Text",ExpressionUUID->"22abce61-de0d-d044-aef5-7bc741539c7f"],
+Cell[1649, 42, 858, 11, 77, "Text",ExpressionUUID->"023bb7b8-1d12-d54a-8349-a87cbad255d6"],
+Cell[2499, 55, 748, 10, 77, "Text",ExpressionUUID->"6784d42d-c85b-1c4d-9f9c-045bf40f0601"],
+Cell[CellGroupData[{
+Cell[3262, 69, 90, 0, 77, "Section",ExpressionUUID->"e0040458-14e4-0c44-8e85-6f5627feeacb"],
+Cell[3355, 71, 599, 9, 77, "Text",ExpressionUUID->"932bf95a-e1c4-3c4b-b872-fd683d4f3f9d"],
+Cell[3948, 82, 1234, 28, 77, "Input",ExpressionUUID->"6613545d-3332-f746-ae49-36296b886e42"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[5191, 115, 119, 0, 77, "Section",ExpressionUUID->"d7001f37-6e9b-564e-9514-9668db96c852"],
+Cell[5313, 117, 751, 10, 77, "Text",ExpressionUUID->"7d509e02-851b-7843-9f1d-d8ebd6a45038"],
+Cell[6057, 129, 1239, 30, 77, "Input",ExpressionUUID->"fb974387-6f20-7242-9c8f-104ba17e28f9"],
+Cell[7269, 161, 3093, 66, 77, "Input",ExpressionUUID->"118770ef-1c21-fc49-a236-71c9167a5234"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[10333, 232, 96, 0, 77, "Section",ExpressionUUID->"c62498aa-7c16-a144-8717-07a2e5c8b7c4"],
+Cell[10432, 234, 284, 4, 77, "Text",ExpressionUUID->"6cc706e1-2317-c142-a784-8198d5895980"],
+Cell[10715, 240, 1788, 38, 77, "Input",ExpressionUUID->"589a1138-ef87-774e-a714-b276883a7185"],
+Cell[12468, 280, 2186, 46, 77, "Input",ExpressionUUID->"096fde04-972a-c141-a50d-09b91f5fad79"],
+Cell[14611, 328, 2536, 53, 77, "Input",ExpressionUUID->"175ad874-db73-0d4d-a50e-b59b924e4f58"],
+Cell[17097, 383, 728, 15, 77, "Input",ExpressionUUID->"5f01c20b-30b9-2e42-8c03-94215672248d"],
+Cell[17813, 400, 580, 13, 77, "Input",ExpressionUUID->"0d5b55db-4067-f543-9bfd-a18d277bd045"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[18417, 418, 95, 0, 77, "Section",ExpressionUUID->"7e8710c9-8e96-5b44-a06c-81a7f149dd52"],
+Cell[18515, 420, 274, 4, 77, "Text",ExpressionUUID->"bff44021-72a0-3e44-936a-4163d0a7d831"],
+Cell[18788, 426, 1312, 30, 77, "Input",ExpressionUUID->"4b481847-8675-ac4f-ac06-ca75c9134b35"],
+Cell[20073, 458, 2105, 44, 77, "Input",ExpressionUUID->"81bc225b-9680-7943-b059-384a9571417b"],
+Cell[22137, 504, 658, 10, 77, "Input",ExpressionUUID->"8ef92e08-f6af-524b-b92b-45598ef9b86e"],
+Cell[22788, 516, 134, 1, 77, "Input",ExpressionUUID->"2eda0933-e6db-7543-a161-b805afa73afd"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[22958, 522, 103, 0, 77, "Section",ExpressionUUID->"0ead6822-c91f-194f-82fe-17d1c1bf79d5"],
+Cell[23064, 524, 280, 4, 77, "Text",ExpressionUUID->"1c21ad39-44d3-e443-b68d-4b2e39488b31"],
+Cell[23343, 530, 2239, 45, 77, "Input",ExpressionUUID->"47b0d88a-3d49-3043-9fdb-adfc1ebe23dc"],
+Cell[25540, 577, 663, 10, 77, "Input",ExpressionUUID->"1bcf560e-5eaa-4645-92bf-cdc6e3145cc3"],
+Cell[26196, 589, 140, 2, 77, "Input",ExpressionUUID->"067b8534-f221-1748-a3ea-2391f9738fc6"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[26371, 596, 154, 2, 77, "Section",ExpressionUUID->"792906a7-1943-7247-b2af-8374b290c764"],
+Cell[26526, 600, 847, 11, 77, "Text",ExpressionUUID->"c38767c9-389f-0041-acc4-6b91e5f9447f"],
+Cell[27365, 613, 2018, 43, 77, "Input",ExpressionUUID->"edbdd9c9-20c0-d64b-931a-33d7d8931c7d"],
+Cell[29343, 658, 726, 16, 77, "Input",ExpressionUUID->"0385c291-a92a-fc4d-b92f-3a8f56296c32"],
+Cell[30056, 676, 1733, 34, 77, "Input",ExpressionUUID->"4473b10c-f3e4-8244-8540-d238821c7679"],
+Cell[31758, 712, 655, 10, 77, "Input",ExpressionUUID->"bad8baf4-33f1-114f-8925-38656b4e7fdd"]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
