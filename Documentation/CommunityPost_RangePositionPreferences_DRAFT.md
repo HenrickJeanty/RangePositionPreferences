@@ -1,6 +1,6 @@
 # Where do the Open and the Close sit in the range of a candlestick? A study of 519 stocks
 
-**Draft, not posted.** **Code and notebook:** the folder `RangePositionPreferences` (link to add when it is published). The price data are built by the notebook from your own `FinancialData` access (see "Run it yourself").
+**Draft, not posted.** **Code and notebook:** [https://github.com/HenrickJeanty/RangePositionPreferences](https://github.com/HenrickJeanty/RangePositionPreferences) (MIT licence). The price data are built by the notebook from your own `FinancialData` access (see "Run it yourself").
 
 ## The question
 
@@ -107,6 +107,5 @@ For daily candlesticks use `"daily"` and the daily file, and add `"MinRelativeRa
 
 ## Checks still to do before posting
 
-* Publish the folder (GitHub) and put the link at the top.
 * Ask Wolfram whether the saved ratios (no prices) may be shared, if you ever want to offer them as a download; for now they are not included.
 * Replace the two preview figures with front-end screenshots.
