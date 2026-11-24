@@ -1,6 +1,6 @@
-# Where do the Open and the Close sit in the range of a candlestick? A study of 519 stocks
+# Do the Open and the Close of a candlestick prefer certain places in its range? A study of 519 stocks
 
-**Draft, not posted.** **Code and notebook:** [https://github.com/HenrickJeanty/RangePositionPreferences](https://github.com/HenrickJeanty/RangePositionPreferences) (MIT licence). The price data are built by the notebook from your own `FinancialData` access (see "Run it yourself").
+**Posted on Wolfram Community (2026-11-23):** [https://community.wolfram.com/t/do-the-open-and-the-close-of-a-candlestick-prefer-certain-places-in-its-range-a-study-of-519-stocks/28660](https://community.wolfram.com/t/do-the-open-and-the-close-of-a-candlestick-prefer-certain-places-in-its-range-a-study-of-519-stocks/28660). **Code and notebook:** [https://github.com/HenrickJeanty/RangePositionPreferences](https://github.com/HenrickJeanty/RangePositionPreferences) (MIT licence). The price data are built by the notebook from your own `FinancialData` access (see "Run it yourself").
 
 ## The question
 
