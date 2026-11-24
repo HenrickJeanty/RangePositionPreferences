@@ -4,6 +4,8 @@ Are there preferred places for the **Open** and the **Close** in the range of a 
 
 For a candlestick, the position of the Open in its range is `(Open - Low)/(High - Low)`: 0 when the Open is at the Low, 1 when it is at the High. The same for the Close.
 
+**Discussion:** the study is described, with figures and results, in the Wolfram Community post [Do the Open and the Close of a candlestick prefer certain places in its range? A study of 519 stocks](https://community.wolfram.com/t/do-the-open-and-the-close-of-a-candlestick-prefer-certain-places-in-its-range-a-study-of-519-stocks/28660).
+
 **The price data are not included.** They come from `FinancialData`, whose terms apply, so the package does not redistribute them. Instead it contains `buildRangePositionData`, which downloads the prices through your own access to `FinancialData` and saves only the positions, relative ranges and years (no prices) in `Data/`. `Tickers.txt` lists the 519 tickers of the study.
 
 ## Quick start
