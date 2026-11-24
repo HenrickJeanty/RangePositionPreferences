@@ -2,6 +2,8 @@
 
 **Posted on Wolfram Community (2026-11-23):** [https://community.wolfram.com/t/do-the-open-and-the-close-of-a-candlestick-prefer-certain-places-in-its-range-a-study-of-519-stocks/28660](https://community.wolfram.com/t/do-the-open-and-the-close-of-a-candlestick-prefer-certain-places-in-its-range-a-study-of-519-stocks/28660). **Code and notebook:** [https://github.com/HenrickJeanty/RangePositionPreferences](https://github.com/HenrickJeanty/RangePositionPreferences) (MIT licence). The price data are built by the notebook from your own `FinancialData` access (see "Run it yourself").
 
+**Related post:** [Technical Analysis Pattern Viewer: see support, resistance and chart patterns on any candlesticks](https://community.wolfram.com/t/technical-analysis-pattern-viewer-see-support-resistance-and-chart-patterns-on-any-candlesticks/28642) (the viewer for the candlesticks, support and resistance lines and patterns).
+
 ## The question
 
 For every candlestick, the position of the Open in its range is (Open − Low)/(High − Low): 0 when the Open is at the Low, 1 when it is at the High. The same for the Close. Are some positions preferred?
